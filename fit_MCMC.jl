@@ -24,6 +24,10 @@ function fit_model(sites, g, n_iter, theta0, hyperparam)
     chain_g = Vector{Any}(undef, n_iter)
     chain_z = Vector{Any}(undef, n_iter)
     chain_beta = Vector{Any}(undef, n_iter)
+    chain_gamma = Vector{Any}(undef, n_iter)
+    chain_tau = Vector{Any}(undef, n_iter)
+    chain_rho = Vector{Any}(undef, n_iter)
+    chain_phi = Vector{Any}(undef, n_iter)
     n_time = size(g, 2) #365
     n = size(g, 1) #32
 
@@ -36,6 +40,10 @@ function fit_model(sites, g, n_iter, theta0, hyperparam)
     chain[1] = copy(theta0)
 
     chain_beta[1] = theta0[:beta]
+    chain_tau[1] = theta0[:tau]
+    chain_gamma[1] = theta0[:gamma]
+    chain_rho[1] = theta0[:rho]
+    chain_phi[1] = theta0[:phi]
     chain_f[1] = sample_f(g, chain[1], 1)
     Sigma_f = sq_exp_kernel(t, chain[1][:rho], nugget = 1e-9)
     Sigma_f_inv = inv(Sigma_f)
@@ -62,7 +70,7 @@ function fit_model(sites, g, n_iter, theta0, hyperparam)
         f = sample_f(g, curr, 1)
         
         curr[:beta] = sample_beta(curr, hyperparam, Sigma_gamma, X)
-        println("beta: ", curr[:beta])
+        #println("beta: ", curr[:beta])
 
         curr[:phi], Sigma_gamma = sample_phi(dist, X, curr, hyperparam)
         #println("phi: ", curr[:phi])
@@ -93,6 +101,10 @@ function fit_model(sites, g, n_iter, theta0, hyperparam)
         chain_g[iter] = copy(g_hat)
         chain_z[iter] = copy(z)
         chain_beta[iter] = copy(curr[:beta])
+        chain_gamma[iter] = copy(curr[:gamma])
+        chain_tau[iter] = copy(curr[:tau])
+        chain_rho[iter] = copy(curr[:rho])
+        chain_phi[iter] = copy(curr[:phi])
         
         #println(iter, "  ", chain[iter])
         # println(iter, "   ", curr[:rho])
@@ -112,6 +124,10 @@ function fit_model(sites, g, n_iter, theta0, hyperparam)
         :chain_g => chain_g,
         :chain_z => chain_z,
         :chain_beta => chain_beta,
+        :chain_gamma => chain_gamma,
+        :chain_tau => chain_tau,
+        :chain_phi => chain_phi,
+        :chain_rho => chain_rho,
         :runtime => runtime
     )
 end

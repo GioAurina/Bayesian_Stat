@@ -361,3 +361,108 @@ function ultosymmetric(m)
     return m
 end
 
+#' Wrap data as we wish, like getSummaryOutput
+function wrap_data(result, burn_in, n_iter, twoD_flag)
+    
+    var_cut = result[burn_in:n_iter]
+    probs = [0.025, 0.5, 0.975]
+
+    # Calcola i quantili per ogni time point e trial
+    if twoD_flag == true
+        
+        var_length = length(var_cut[1])
+        var_quantiles = Array{Float64}(undef, 3, var_length)
+        for t in 1:var_length
+            var_quantiles[:, t] = quantile([obs[t] for obs in var_cut], probs)
+        end
+
+        # Estrai i quantili
+        lower = var_quantiles[1, :]
+        median = var_quantiles[2, :]
+        upper = var_quantiles[3, :]
+
+    else 
+
+        var_length1 = length(var_cut[1][:,1]) # sites
+        var_length2 = length(var_cut[1][1,:]) # time
+        var_quantiles = Array{Float64}(undef, 3, var_length1, var_length2)
+        for ii in 1:var_length1
+            for t in 1:var_length2
+                var_quantiles[:, ii, t] = quantile([obs[ii,t] for obs in var_cut], probs)
+            end
+        end
+
+        # Estrai i quantili
+        lower = var_quantiles[1, :, :]
+        median = var_quantiles[2, :, :]
+        upper = var_quantiles[3, :, :]
+    end
+
+    return Dict(:lower => lower, :median => median, :upper => upper)
+
+end
+
+
+
+
+function compare_estimates(g_wrap, gamma_wrap, f_wrap, b_wrap, dat, theta_true, k, row)
+    println("Comparing estimates for row: ", row)
+
+    # Extract original and estimated values
+    g_true = dat[:g][row, k, :]
+    f_true = dat[:f][k,:]
+    beta_true = theta_true[k][:beta]  
+    gamma_true = theta_true[k][:gamma]
+
+    g_est = g_wrap[:median][row, :]
+    g_lower = g_wrap[:lower][row, :]
+    g_upper = g_wrap[:upper][row, :]
+
+    gamma_est = gamma_wrap[:median]
+    gamma_lower = gamma_wrap[:lower]
+    gamma_upper = gamma_wrap[:upper]
+
+    f_est = f_wrap[:median]
+    f_lower = f_wrap[:lower]
+    f_upper = f_wrap[:upper]
+
+    beta_est = b_wrap[:median]
+    beta_lower = b_wrap[:lower]
+    beta_upper = b_wrap[:upper]
+
+    # Print tables
+    println("\nComparison for g (row $row):")
+    println(DataFrame(Time=1:length(g_true), True=g_true, 
+                      Estimate=g_est, Lower=g_lower, Upper=g_upper))
+
+    println("\nComparison for f:")
+    println(DataFrame(Time=1:length(f_true), True=f_true, 
+                      Estimate=f_est, Lower=f_lower, Upper=f_upper))
+
+    println("\nComparison for Beta:")
+    println(DataFrame(Index=1:length(beta_true), True=beta_true, 
+                      Estimate=beta_est, Lower=beta_lower, Upper=beta_upper))
+
+    println("\nComparison for Gamma:")
+    println(DataFrame(Index=1:length(gamma_true), True=gamma_true, 
+                    Estimate=gamma_est, Lower=gamma_lower, Upper=gamma_upper))
+
+    # Plot results
+    p1 = plot(1:length(g_true), g_true, label="g True", lw=2)
+    plot!(p1, 1:length(g_est), g_est, ribbon=(g_est .- g_lower, g_upper .- g_est), 
+          label="g Estimate", lw=2, fillalpha=0.3)
+
+    p2 = scatter(1:length(gamma_true), gamma_true, label="Gamma True", marker=:circle)
+    scatter!(p2, 1:length(gamma_est), gamma_est, yerror=(gamma_est .- gamma_lower, gamma_upper .- gamma_est),
+             label="Gamma Estimate")
+
+    p3 = plot(1:length(f_true), f_true, label="f True", lw=2)
+    plot!(p3, 1:length(f_est), f_est, ribbon=(f_est .- f_lower, f_upper .- f_est), 
+          label="f Estimate", lw=2, fillalpha=0.3)
+
+    p4 = scatter(1:length(beta_true), beta_true, label="Beta True", marker=:circle)
+    scatter!(p4, 1:length(beta_est), beta_est, yerror=(beta_est .- beta_lower, beta_upper .- beta_est),
+             label="Beta Estimate")
+
+    plot(p1, p2, p3, p4, layout=(2,2), size=(900, 600)) #p2
+end

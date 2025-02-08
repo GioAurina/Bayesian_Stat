@@ -155,12 +155,6 @@ function sample_beta(current, hyperparam, Sigma_gamma, X)
     p = size(X, 2)
     var = inv(transpose(X) * inv(Sigma_gamma) * X + I(p))
     var = (var + transpose(var))/2
-    println(minimum(var))
-    println(maximum(var))
-    if !isposdef(var)
-        println("var ", issymmetric(var))
-        println(var)
-    end
     m = transpose(var) * transpose(X) * transpose(inv(Sigma_gamma)) * curr[:gamma]
     beta_draw = rand(MultivariateNormal(m, var))
     return beta_draw

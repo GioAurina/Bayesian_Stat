@@ -4,10 +4,8 @@ using Random
 
 include("utilities.jl")
 
-
-#' Sample tau.
-#'
-#' @param y Matrix of observed trial data (n_time x n).
+#=#' Sample tau.
+#' @param g Matrix of observed trial data (n_time x n).
 #' @param f Vector of f values (n_time).
 #' @param current Named list of current parameter values.
 #' @param hyperparam Named list of hyperparameter values.
@@ -36,6 +34,31 @@ function sample_tau(t, g, f, current, hyperparam, Sigma_f, Sigma_f_inv)
     end
 end
 
+=#
+
+
+function sample_tau(t, g, f, current, hyperparam, Sigma_f, Sigma_f_inv)
+    
+    n = size(g, 1)
+    curr = copy(current)
+
+    for i in 1:n 
+        proposed = copy(curr)
+        proposed[:tau][i] = propose_tau_i(curr[:tau][i], hyperparam[:tau_proposal_sd])
+        lik_current = target_g_i(i, t, g, f, curr, Sigma_f, Sigma_f_inv)
+        prior_current = prior[:tau_i](curr[:tau][i], hyperparam[:tau_proposal_sd])
+        
+        lik_proposed = target_g_i(i, t, g, f, proposed, Sigma_f, Sigma_f_inv)
+        prior_proposed = prior[:tau_i](proposed[:tau][i], hyperparam[:tau_proposal_sd])
+        
+        prob = exp(lik_proposed + prior_proposed - lik_current - prior_current)
+
+        if prob > rand()
+            curr[:tau][i] = copy(proposed[:tau][i])
+        end
+    end
+    return curr[:tau]
+end
 
 
 # Sample rho.

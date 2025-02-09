@@ -47,4 +47,9 @@ function propose_gamma_i(gamma_i, gamma_proposal_sd)
 end
 
 
+function propose_tau_i(tau_i, tau_proposal_sd)
+    proposal = rand(Normal(tau_i, tau_proposal_sd)) 
+    return proposal
+end
+
 

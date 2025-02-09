@@ -21,7 +21,6 @@ function generate_data(sites, n, K, n_time, theta)
 
     for k in 1:K
         theta_k = theta[k]
-        # Calcola Sigma_f usando la funzione sq_exp_kernel (presupposta definita)
         Sigma_f = sq_exp_kernel(t, theta_k[:rho]; nugget=1e-6)
         Sigma_f_inv = inv(Sigma_f)
         # Genera il vettore f dalla distribuzione normale multivariata con media zero e matrice varianza Sigma_f
@@ -32,7 +31,6 @@ function generate_data(sites, n, K, n_time, theta)
         theta_k[:gamma] = gamma[:, k]
         # Loop attraverso ciascuna colonna i
         for i in 1:n
-            # Calcola Sigma_i usando la funzione get_Sigma_i (presupposta definita)
             Sigma_i = get_Sigma_i(i, t, theta_k)
 
             # Calcola mu come Sigma_i * Sigma_f_inv * f
@@ -41,7 +39,6 @@ function generate_data(sites, n, K, n_time, theta)
 
     end
     
-    # Restituisce un dizionario contenente le matrici g, f, gamma
     return Dict(:g => g, :f => f, :gamma => gamma)
 end
 
@@ -54,10 +51,8 @@ end
 #' @param nugget Covariance nugget.
 function sq_exp_kernel(t, rho; alpha=1, nugget=0.0)
     n_time = length(t)
-    # Calcolo dell'esponenziale quadratico
     K = Matrix{Float64}(undef, n_time, n_time)
 
-    # Popola la matrice K
     for i in 1:n_time
         for j in 1:n_time
             K[i, j] = alpha^2 * exp(- (rho)^2 / 2 * (t[i] - t[j])^2)
@@ -80,10 +75,9 @@ end
 #' @param nugget Covariance nugget.
 function get_Sigma_gamma(D, phi; alpha=1, nugget=1e-6)
     n_stations = size(D, 1)
-    # Calcolo dell'esponenziale quadratico
+
     K = Matrix{Float64}(undef, n_stations, n_stations)
 
-    # Popola la matrice K
     for i in 1:n_stations
         for j in 1:n_stations
             K[i, j] = alpha^2 * exp(-phi^2 / 2 * (D[i,j])^2)
@@ -105,7 +99,6 @@ function get_Sigma_i(i, t, theta)
     n_time = length(t)
     K = Matrix{Float64}(undef, n_time, n_time)
 
-    # Popola la matrice K
     for ii in 1:n_time
         for jj in 1:n_time
             K[ii, jj] = exp(-theta[:rho]^2 / 2 * (t[ii] - t[jj] - theta[:tau][i])^2)
@@ -157,7 +150,6 @@ end
 #' @param Sigma_f_inv Inverse covariance matrix of f.
 function get_mu_g(i, t, f, theta, Sigma_f_inv)
     
-    # Calcola Sigma_i usando la funzione get_Sigma_i (presupposta definita)
     Sigma_i = get_Sigma_i(i, t, theta)
     
     # Calcola mu come il prodotto Sigma_i * Sigma_f_inv * f
@@ -174,10 +166,10 @@ end
 #' @param theta Parameter values.
 #' @param Sigma_f_inv Inverse covariance matrix of f (n_time x n_time).
 function get_mu_g_matrix(g, f, t, theta, Sigma_f_inv)
-    # Inizializza la matrice y_hat con il numero di righe e colonne di y
+    # Inizializza la matrice g_hat con il numero di righe e colonne di g
     g_hat = Matrix{Float64}(undef, size(g, 1), size(g, 2))
 
-    # Popola ogni colonna di y_hat utilizzando la funzione get_mu_g
+    # Popola ogni colonna di g_hat utilizzando la funzione get_mu_g
     for i in 1:size(g, 1)
         g_hat[i, :] = get_mu_g(i, t, f, theta, Sigma_f_inv)
     end
@@ -465,4 +457,11 @@ function compare_estimates(g_wrap, gamma_wrap, f_wrap, b_wrap, dat, theta_true, 
              label="Beta Estimate")
 
     plot(p1, p2, p3, p4, layout=(2,2), size=(900, 600)) #p2
+end
+
+
+function plot_acf_histogram(chain::Vector{T}, param_name::String, max_lag=50) where T
+    acf_values = autocor(chain, 1:max_lag)  # Compute ACF for lags 1 to max_lag
+    bar(1:max_lag, acf_values, xlabel="Lag", ylabel="Autocorrelation", 
+        title="ACF Histogram of $param_name", legend=false)
 end

@@ -2,7 +2,7 @@ using Distributions, LinearAlgebra
 
 prior = Dict()
 
-#=
+
 #' Prior for tau (latency).
 #'
 #' @param tau tau value.
@@ -15,7 +15,7 @@ prior[:tau] = function prior_tau(tau, tau_prior_sd)
     result += logpdf(mvn, tau[1:n])
     return result
 end
-=#
+
 
 
 prior[:tau_i] = function prior_tau_i(tau_i, tau_prior_sd)

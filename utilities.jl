@@ -187,7 +187,7 @@ function get_Sigma_g_i(i, t, theta, Sigma_f, Sigma_f_inv)
 
     Sigma_i = get_Sigma_i(i, t, theta)
 
-    K = (exp(theta[:gamma][i])^2) .* (Sigma_f - Sigma_i * Sigma_f_inv * (Sigma_i)' ) + 0.01 .* I(size(Sigma_f, 1))
+    K = (exp(theta[:gamma][i])^2) .* (Sigma_f - Sigma_i * Sigma_f_inv * (Sigma_i)' ) + 0.00005 .* I(size(Sigma_f, 1))
     # Simmetrizzo
     K  = (K  + K') / 2
 
@@ -460,8 +460,40 @@ function compare_estimates(g_wrap, gamma_wrap, f_wrap, b_wrap, dat, theta_true, 
 end
 
 
-function plot_acf_histogram(chain::Vector{T}, param_name::String, max_lag=50) where T
-    acf_values = autocor(chain, 1:max_lag)  # Compute ACF for lags 1 to max_lag
-    bar(1:max_lag, acf_values, xlabel="Lag", ylabel="Autocorrelation", 
-        title="ACF Histogram of $param_name", legend=false)
+function plot_acf_histogram(chain::Vector{T}, param_name::String) where T
+    lags = collect(1001:5:length(chain))  # Generate indices 1, 6, 11, 16, ...
+    acf_values = autocor(chain, lags)  # Compute ACF for selected lags
+
+    scatter(1:length(lags), acf_values, xlabel="Lag", ylabel="Autocorrelation", 
+           title="ACF Scatter Plot of $param_name", legend=false, markersize=5)
+end
+
+
+# in ingresso un vettore unitario, lanciare la funziona per K fissato
+function latent_param_retrieval(f_true,f_wrap, gamma, gamma_wrap)
+ 
+    f_norm = norm(f_true,2)
+    f_hnorm = norm(f_wrap[:median],2)
+ 
+    f_true_unit = f_true / f_norm
+    gam_plus = gamma + log(f_norm)*ones(32)
+ 
+    f_est = f_wrap[:median] / f_hnorm
+    f_lower = f_wrap[:lower] / f_hnorm
+    f_upper = f_wrap[:upper] / f_hnorm
+ 
+    gamma_est = gamma_wrap[:median] + log(f_hnorm)*ones(32)
+    gamma_lower = gamma_wrap[:lower] + log(f_hnorm)*ones(32)
+    gamma_upper = gamma_wrap[:upper] + log(f_hnorm)*ones(32)
+ 
+    # Plot results
+    p1 = scatter(1:length(gam_plus), gam_plus, label="Gamma True Plus", marker=:circle)
+    scatter!(p1, 1:length(gamma_est), gamma_est, yerror=(gamma_est .- gamma_lower, gamma_upper .- gamma_est),
+                label="Gamma Estimate Plus")
+ 
+    p2 = plot(1:length(f_true_unit), f_true_unit, label="f True Normalized", lw=2)
+    plot!(p2, 1:length(f_est), f_est, ribbon=(f_est .- f_lower, f_upper .- f_est),
+            label="f Estimate Normalized", lw=2, fillalpha=0.3)
+           
+    plot(p1, p2, layout=(2,1), size=(900, 600))
 end

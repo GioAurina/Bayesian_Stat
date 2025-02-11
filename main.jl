@@ -28,17 +28,17 @@ sites, dat, theta_true, dat_trials = simulate_data(df, seed, K, n, n_time)
 # Hyperparameters for MCMC
 hyperparam = Dict(
     :tau_prior_sd => sqrt(3), 
-    :tau_proposal_sd => 0.01,
+    :tau_proposal_sd => 0.02,
     :rho_prior_shape => 0.02, 
     :rho_prior_scale => 1,
-    :rho_proposal_sd => 0.01, 
+    :rho_proposal_sd => 0.05, 
     #:beta_prior_mu => 0, 
     #:beta_prior_sd => 1,
     :phi_prior_shape => 0.02,
     :phi_prior_scale => 1.0,
-    :phi_proposal_sd => 0.05,
+    :phi_proposal_sd => 0.01,
     :beta_proposal_sd => 0.1,
-    :gamma_proposal_sd => 0.01
+    :gamma_proposal_sd => 0.02
 )
 
 #theta0 = Dict{Int64, Dict{Any,Any}}()
@@ -52,12 +52,12 @@ theta0 = Dict(
 
 
 # Iterations of MCMC
-k = 2 #fix a source
-n_iter = 2000
+k = 1 #fix a source
+n_iter = 6000
 
 Random.seed!(seed)
 results = fit_model(sites, dat[:g][:,k,:], n_iter, theta0, hyperparam)
-burn_in = 800
+burn_in = 1000
 
 # Save all the matrices in a file HDF5
 h5open("matrici.h5", "w") do file
@@ -101,8 +101,55 @@ b_wrap = wrap_data(results[:chain_beta], burn_in, n_iter, true)
 gamma_wrap = wrap_data(results[:chain_gamma] , burn_in, n_iter, true) 
 
 compare_estimates(g_wrap, gamma_wrap, f_wrap, b_wrap, dat, theta_true, k, 1) # scegliere quale sito
+latent_param_retrieval(dat[:f][k,:],f_wrap, dat[:gamma][:,k], gamma_wrap)
 
+#Trace Plots
 
+p13 = plot()
+plot!(1:n_iter, [results[:chain_g][i][2,7] for i in 1:n_iter], label="g[2,5] Trace")
+display(p13)
+
+p14 = plot()
+plot!(1:n_iter, [results[:chain_beta][i][4] for i in 1:n_iter], label="Beta[4] Trace")
+display(p14)
+
+p15 = plot()
+plot!(1:n_iter, [results[:chain_gamma][i][4] for i in 1:n_iter], label="Gamma[4] Trace")
+display(p15)
+
+p16 = plot()
+plot!(1:n_iter, [results[:chain_tau][i][4] for i in 1:n_iter], label="Tau[4] Trace")
+display(p16)
+
+p17 = plot()
+plot!(1:n_iter, [results[:chain_rho][i] for i in 1:n_iter], label="Rho Trace")
+plot!(1:n_iter, 0.2 * ones(n_iter))
+display(p17)
+
+p18 = plot()
+plot!(1:n_iter, [results[:chain_phi][i] for i in 1:n_iter], label="Phi Trace")
+plot!(1:n_iter, (1/400) * ones(n_iter))
+display(p18)
+
+# Compute ACF for g[2,4]
+plot_acf_histogram([results[:chain_g][i][4,4] for i in burn_in:n_iter], "g[2,4]")
+
+# Compute ACF for Beta[4]
+plot_acf_histogram([results[:chain_beta][i][4] for i in burn_in+1:n_iter], "Beta[4]", burn_in)
+
+# Compute ACF for Gamma[4]
+plot_acf_histogram([results[:chain_gamma][i][4] for i in burn_in+1:n_iter], "Gamma[4]", burn_in)
+
+# Compute ACF for Tau[4]
+plot_acf_histogram([results[:chain_tau][i][4] for i in burn_in+1:n_iter], "Tau[4]", burn_in)
+
+# Compute ACF for Rho
+plot_acf_histogram([results[:chain_rho][i] for i in burn_in+1:n_iter], "Rho", burn_in)
+
+# Compute ACF for Phi
+plot_acf_histogram([results[:chain_phi][i] for i in burn_in+1:n_iter], "Phi", burn_in)
+
+#=
 dat_trials_summary = combine(groupby(dat_trials[k], :time), :value => mean => :value_mean)
 
 # Compute the median of predicted values
@@ -131,46 +178,7 @@ plot!(p12, out_sim_summary.time, dat[:f][k, :], label="True f", linestyle=:dash,
 plot!(p12, dat_trials_summary.time, dat_trials_summary.value_mean, label="Empirical Mean", linestyle=:dot, linewidth=2, color=:black)
 
 display(p12)
-
-#Trace Plots
-p14 = plot()
-plot!(1:n_iter, [results[:chain_beta][i][4] for i in 1:n_iter], label="Beta[4] Trace")
-display(p14)
-
-p15 = plot()
-plot!(1:n_iter, [results[:chain_gamma][i][4] for i in 1:n_iter], label="Gamma[4] Trace")
-display(p15)
-
-p16 = plot()
-plot!(1:n_iter, [results[:chain_tau][i][4] for i in 1:n_iter], label="Tau[4] Trace")
-display(p16)
-
-p17 = plot()
-plot!(1:n_iter, [results[:chain_rho][i] for i in 1:n_iter], label="Rho[4] Trace")
-display(p17)
-
-p18 = plot()
-plot!(1:n_iter, [results[:chain_phi][i] for i in 1:n_iter], label="Rho[4] Trace")
-display(p18)
-
-
-max_lag = 200   # Maximum lag for ACF
-
-# Compute ACF for Beta[4]
-plot_acf_histogram([results[:chain_beta][i][4] for i in burn_in:n_iter], "Beta[4]", max_lag)
-
-# Compute ACF for Gamma[4]
-plot_acf_histogram([results[:chain_gamma][i][4] for i in burn_in:n_iter], "Gamma[4]", max_lag)
-
-# Compute ACF for Tau[4]
-plot_acf_histogram([results[:chain_tau][i][4] for i in burn_in:n_iter], "Tau[4]", max_lag)
-
-# Compute ACF for Rho
-plot_acf_histogram([results[:chain_rho][i] for i in burn_in:n_iter], "Rho", max_lag)
-
-# Compute ACF for Phi
-plot_acf_histogram([results[:chain_phi][i] for i in burn_in:n_iter], "Phi", max_lag)
-
+=#
 
 #######SOLO SE VOGLIO LEGGERE DA MATRICE H5
 

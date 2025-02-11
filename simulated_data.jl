@@ -43,7 +43,7 @@ function simulate_data(df, seed, K, n, n_time)
         :rho => 0.1,
         :phi => 1/300.0,
         :gamma => zeros(32),
-        :beta => [-0.5, 0.5, 1., 0.1],
+        :beta => [-0.5, 0.5, 0.8, 0.1],
         :tau => rand(Normal(0, 1), 32) 
     )
 
@@ -51,7 +51,7 @@ function simulate_data(df, seed, K, n, n_time)
         :rho => 0.2,
         :phi => 1/400.0,
         :gamma => zeros(32),
-        :beta => [0.3, -0.4, -0.7, -0.02],
+        :beta => [0.3, -0.4, -0.7, -0.1],
         :tau => rand(Normal(0, 1), 32)
     )
 

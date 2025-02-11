@@ -48,3 +48,11 @@ function marginal_gamma_i(i, theta, Sigma_gamma, X)
     out = tmp == -Inf ? -1e10 : tmp
     return out
 end
+
+function target_f(f, Sigma_f)
+    t = size(Sigma_f, 1)
+    mvn = MvNormal(zeros(t), Sigma_f)
+    tmp = logpdf(mvn, f)
+    out = tmp == -Inf ? -1e10 : tmp
+    return out[1]
+end

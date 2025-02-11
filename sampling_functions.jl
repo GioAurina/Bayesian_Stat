@@ -3,8 +3,8 @@ using LinearAlgebra
 using Random
 
 include("utilities.jl")
-
-#=#' Sample tau.
+#=
+#' Sample tau.
 #' @param g Matrix of observed trial data (n_time x n).
 #' @param f Vector of f values (n_time).
 #' @param current Named list of current parameter values.
@@ -33,8 +33,8 @@ function sample_tau(t, g, f, current, hyperparam, Sigma_f, Sigma_f_inv)
         return current[:tau]
     end
 end
-
 =#
+
 
 
 function sample_tau(t, g, f, current, hyperparam, Sigma_f, Sigma_f_inv)
@@ -46,10 +46,10 @@ function sample_tau(t, g, f, current, hyperparam, Sigma_f, Sigma_f_inv)
         proposed = copy(curr)
         proposed[:tau][i] = propose_tau_i(curr[:tau][i], hyperparam[:tau_proposal_sd])
         lik_current = target_g_i(i, t, g, f, curr, Sigma_f, Sigma_f_inv)
-        prior_current = prior[:tau_i](curr[:tau][i], hyperparam[:tau_proposal_sd])
+        prior_current = prior[:tau_i](curr[:tau][i], hyperparam[:tau_prior_sd])
         
         lik_proposed = target_g_i(i, t, g, f, proposed, Sigma_f, Sigma_f_inv)
-        prior_proposed = prior[:tau_i](proposed[:tau][i], hyperparam[:tau_proposal_sd])
+        prior_proposed = prior[:tau_i](proposed[:tau][i], hyperparam[:tau_prior_sd])
         
         prob = exp(lik_proposed + prior_proposed - lik_current - prior_current)
 
@@ -59,6 +59,7 @@ function sample_tau(t, g, f, current, hyperparam, Sigma_f, Sigma_f_inv)
     end
     return curr[:tau]
 end
+
 
 
 # Sample rho.
@@ -76,11 +77,10 @@ function sample_rho(t, g, f, current, hyperparam)
     
     Sigma_f_curr = sq_exp_kernel(t, current[:rho], nugget = 1e-6)
     Sigma_f_curr_inv = inv(Sigma_f_curr)
-    
-    lik_current = likelihood(t, g, f, current, Sigma_f_curr, Sigma_f_curr_inv)
+    lik_current = likelihood(t, g, f, current, Sigma_f_curr, Sigma_f_curr_inv) + target_f(f, Sigma_f_curr)
     prior_current = prior[:rho](current[:rho], hyperparam[:rho_prior_shape], hyperparam[:rho_prior_scale])
     
-    lik_proposed = likelihood(t, g, f, proposed, Sigma_f_prop, Sigma_f_prop_inv)
+    lik_proposed = likelihood(t, g, f, proposed, Sigma_f_prop, Sigma_f_prop_inv) + target_f(f, Sigma_f_prop)
     prior_proposed = prior[:rho](proposed[:rho], hyperparam[:rho_prior_shape], hyperparam[:rho_prior_scale])
     
     prob = exp(lik_proposed + prior_proposed + proposed[:rho] - lik_current - prior_current - current[:rho])

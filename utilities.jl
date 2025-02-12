@@ -187,7 +187,7 @@ function get_Sigma_g_i(i, t, theta, Sigma_f, Sigma_f_inv)
 
     Sigma_i = get_Sigma_i(i, t, theta)
 
-    K = (exp(theta[:gamma][i])^2) .* (Sigma_f - Sigma_i * Sigma_f_inv * (Sigma_i)' ) + 0.00005 .* I(size(Sigma_f, 1))
+    K = (exp(theta[:gamma][i])^2) .* (Sigma_f - Sigma_i * Sigma_f_inv * (Sigma_i)' ) + 0.001 .* I(size(Sigma_f, 1))
     # Simmetrizzo
     K  = (K  + K') / 2
 
@@ -461,11 +461,11 @@ end
 
 
 function plot_acf_histogram(chain::Vector{T}, param_name::String) where T
-    lags = collect(1001:5:length(chain))  # Generate indices 1, 6, 11, 16, ...
+    lags = collect(1:10:length(chain))  # Generate indices 1, 6, 11, 16, ...
     acf_values = autocor(chain, lags)  # Compute ACF for selected lags
 
-    scatter(1:length(lags), acf_values, xlabel="Lag", ylabel="Autocorrelation", 
-           title="ACF Scatter Plot of $param_name", legend=false, markersize=5)
+    bar(1:length(lags), acf_values, xlabel="Lag", ylabel="Autocorrelation", 
+           title="ACF Plot of $param_name", legend=false, markersize=5)
 end
 
 
@@ -496,4 +496,11 @@ function latent_param_retrieval(f_true,f_wrap, gamma, gamma_wrap)
             label="f Estimate Normalized", lw=2, fillalpha=0.3)
            
     plot(p1, p2, layout=(2,1), size=(900, 600))
+end
+
+function superlatentplot(chain, param_t)
+    clean_chain = Float64.(filter(x -> x isa Number, chain))  # Convert to Float64
+    histogram(clean_chain, bins=100, normalize=:pdf, linecolor=:black, label="Histogram")
+    vline!([param_t], linewidth=2, linecolor=:red, linestyle=:dash, label="True Param")
+    
 end

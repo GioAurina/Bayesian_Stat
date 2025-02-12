@@ -3,7 +3,7 @@ using LinearAlgebra
 using Random
 
 include("utilities.jl")
-#=
+
 #' Sample tau.
 #' @param g Matrix of observed trial data (n_time x n).
 #' @param f Vector of f values (n_time).
@@ -33,10 +33,10 @@ function sample_tau(t, g, f, current, hyperparam, Sigma_f, Sigma_f_inv)
         return current[:tau]
     end
 end
-=#
 
 
 
+#=
 function sample_tau(t, g, f, current, hyperparam, Sigma_f, Sigma_f_inv)
     
     n = size(g, 1)
@@ -59,7 +59,7 @@ function sample_tau(t, g, f, current, hyperparam, Sigma_f, Sigma_f_inv)
     end
     return curr[:tau]
 end
-
+=#
 
 
 # Sample rho.
